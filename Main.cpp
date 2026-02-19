@@ -51,111 +51,97 @@ public:
 	// Prevents memory leaks by deleting the data array.
 	~Vector();
 
-	// Non-const [size_t] operator
+	// non-const operator[](size_t)
 	// Allows for the Vector to be indexed and edited without bounds checking.
 	T& operator[](size_t);
 
-	// Const [size_t] operator
+	// const operator[](size_t)
 	// Allows for the Vector to be indexed without bounds checking.
 	const T& operator[](size_t) const;
 
-	// At(size_t) Function
+	// at(size_t) Function
 	// Allows for the Vector to be indexed and edited with bounds checking.
-	T& At(size_t);
 	T& at(size_t);
 
-	// Const At(size_t) Function
+	// Const at(size_t) Function
 	// Allows for const Vector to be index with bounds checking.
-	const T& At(size_t) const;
 	const T& at(size_t) const;
 
-	// PushBack(const T&) Function
+	// push_back(const T&) Function
 	// Pushes a new element to the back of the Vector.
-	void PushBack(const T&);
 	void push_back(const T&);
 
-	// PushBack(T&&) Move Function
+	// push_back(T&&) Move Function
 	// Pushes a moved element to the back of the Vector.
-	void PushBack(T&&);
 	void push_back(T&&);
 
-	// PushFront(const T&) Function
+	// push_front(const T&) Function
 	// Pushes a new element to the front of the Vector.
-	void PushFront(const T&);
 	void push_front(const T&);
 
-	// PushFront(T&&) Move Function
+	// push_front(T&&) Move Function
 	// Pushes a moved element to the front of the Vector.
 	// Note: This function has an O(n) time complexity, and PushBack() should always be preferred for its O(1) time complexity.
-	void PushFront(T&&);
 	void push_front(T&&);
 
-	// PopBack() Function
+	// pop_back() Function
 	// Pops the element at the back of the Vector and returns the value.
-	T PopBack();
 	T pop_back();
 
-	// PopFront() Function
+	// pop_front() Function
 	// Pops the element at the front of the Vector and returns the value.
 	// Note: This function has an O(n) time complexity, and PopBack() should always be preferred for its O(1) time complexity.
-	T PopFront();
 	T pop_front();
 
-	// RemoveAt(size_t) Function
+	// remove_at(size_t) Function
 	// Remove the element at a given index.
-	void RemoveAt(size_t);
 	void remove_at(size_t);
 
-	// Back() Function
+	// back() Function
 	// Returns a reference to the element at the back of the Vector.
-	T& Back();
 	T& back();
-	// const Back() Function
+
+	// const back() Function
 	// Return a const reference to the element at the back of the Vector.
-	const T& Back() const;
 	const T& back() const;
 
-	// Front() Function
+	// front() Function
 	// Returns a reference to the element at the front of the Vector.
-	T& Front();
 	T& front();
 
-	// const Front() Function
+	// const front() Function
 	// Returns a const reference to the element at the front of the vector.
-	const T& Front() const;
 	const T& front() const;
 
-	// Find(const T&) Function
+	// find(const T&) Function
 	// Finds the index of an element, returns m_Size if it is not found as m_Size is not a valid index.
 	// Note that this requires T to have an == operator.
-	size_t Find(const T&) const;
 	size_t find(const T&) const;
 
-	// Clear() Function
+	// clear() Function
 	// Clears the Vector by setting the size to 0.
-	void Clear();
 	void clear();
 
-	// Empty() Function
+	// empty() Function
 	// Returns if the Vector is empty.
-	bool Empty() const;
 	bool empty() const;
 
-	// Size() Function
+	// size() Function
 	// Returns the size of the Vector.
-	size_t Size() const;
 	size_t size() const;
 
-	// Capacity() Function
+	// capacity() Function
 	// Returns the capacity of the Vector.
-	size_t Capacity() const;
 	size_t capacity() const;
 
 private:
-	// Grow() Function
+	// grow() Function
 	// Double the capacity, copy the values of the array, and create a new array.
-	void Grow();
+	void grow();
 };
+
+// Note: The function names in the comments below are no longer 
+// accurate as I switched to snake case as it is what the STL vector uses.
 
 // Default Constructor: Creates an empty Vector
 template<typename T>
@@ -227,6 +213,7 @@ Vector<T>& Vector<T>::operator=(const Vector& other) {
 	m_Size = other.m_Size;				// Copy the size.
 	m_Data = new T[m_Capacity];			// Create a new array with the other Vector's capacity.
 	for (size_t i = 0; i < m_Size; ++i) {
+		assert(i < m_Capacity);
 		m_Data[i] = other.m_Data[i];		// Deep copy each element from the other Vector to the new Vector.
 	}
 	return *this;		// Return the dereferenced this pointer. This allows for chained equals like vec1 = vec2 = vec3.
@@ -277,23 +264,18 @@ const T& Vector<T>::operator[](size_t idx) const {
 // At(size_t) Function
 // Allows for the Vector to be indexed and edited with bounds checking.
 template<typename T>
-T& Vector<T>::At(size_t idx) {
+T& Vector<T>::at(size_t idx) {
 	// Check that the Vector's size is less than the index given.
 	if (idx >= m_Size) {
 		throw std::runtime_error("Vector Error: Index given to At() is out of bounds.");		// Throw an exception with the error message.
 	}
 	return m_Data[idx];		// Return the m_Data pointer at idx with bounds checking.
-}
-
-template<typename T>
-T& Vector<T>::at(size_t idx) {
-	return At(idx);
 }
 
 // Const At(size_t) Function
 // Allows for const Vector to be index with bounds checking.
 template<typename T>
-const T& Vector<T>::At(size_t idx) const {
+const T& Vector<T>::at(size_t idx) const {
 	// Check that the Vector's size is less than the index given.
 	if (idx >= m_Size) {
 		throw std::runtime_error("Vector Error: Index given to At() is out of bounds.");		// Throw an exception with the error message.
@@ -301,50 +283,35 @@ const T& Vector<T>::At(size_t idx) const {
 	return m_Data[idx];		// Return the m_Data pointer at idx with bounds checking.
 }
 
-template<typename T>
-const T& Vector<T>::at(size_t idx) const {
-	return At(idx);
-}
-
 // PushBack(const T&) Function
 // Pushes a new element to the back of the Vector.
 template<typename T>
-void Vector<T>::PushBack(const T& value) {
+void Vector<T>::push_back(const T& value) {
 	// Check if the Vector has enough capacity to push back the element.
 	if (m_Size + 1 > m_Capacity) {
-		Grow();		// Call the Grow() function to grow the array.
+		grow();		// Call the Grow() function to grow the array.
 	}
 	m_Data[m_Size++] = value;		// Set m_Data at the previous size to value and increment m_Size.
-}
-
-template<typename T>
-void Vector<T>::push_back(const T& value) {
-	return PushBack(value);
 }
 
 // PushBack(T&&) Move Function
 // Pushes a moved element to the back of the Vector.
 template<typename T>
-void Vector<T>::PushBack(T&& value) {
+void Vector<T>::push_back(T&& value) {
 	// Check if the Vector has enough capacity to move the element to the back.
 	if (m_Size + 1 > m_Capacity) {
-		Grow();		// Call the Grow() function to grow the array.
+		grow();		// Call the Grow() function to grow the array.
 	}
 	m_Data[m_Size++] = std::move(value);		// Move the value to m_Data at the previous size and increment m_Size.
-}
-
-template<typename T>
-void Vector<T>::push_back(T&& value) {
-	return PushBack(value);
 }
 
 // PushFront(const T&) Function
 // Pushes a new element to the front of the Vector.
 template<typename T>
-void Vector<T>::PushFront(const T& value) {
+void Vector<T>::push_front(const T& value) {
 	// Check if the Vector has enough capacity to push the element to the front.
 	if (m_Size + 1 > m_Capacity) {
-		Grow();		// Call the Grow() function to grow the array.
+		grow();		// Call the Grow() function to grow the array.
 	}
 	++m_Size;		// Increment m_Size.
 	// Iterate over the array from the back.
@@ -354,19 +321,14 @@ void Vector<T>::PushFront(const T& value) {
 	m_Data[0] = value;		// Set the now free m_Data[0] to the given value.
 }
 
-template<typename T>
-void Vector<T>::push_front(const T& value) {
-	return PushFront(value);
-}
-
 // PushFront(T&&) Move Function
 // Pushes a moved element to the front of the Vector.
 // Note: This function has an O(n) time complexity, and PushBack() should always be preferred for its O(1) time complexity.
 template<typename T>
-void Vector<T>::PushFront(T&& value) {
+void Vector<T>::push_front(T&& value) {
 	// Check if the Vector has enough capacity to push the element to the front.
 	if (m_Size + 1 > m_Capacity) {
-		Grow();		// Call the Grow() function to grow the array.
+		grow();		// Call the Grow() function to grow the array.
 	}
 	++m_Size;		// Increment m_Size.
 	// Iterate over the array from the back.
@@ -376,15 +338,10 @@ void Vector<T>::PushFront(T&& value) {
 	m_Data[0] = std::move(value);		// Set the now free m_Data[0] to the moved value.
 }
 
-template<typename T>
-void Vector<T>::push_front(T&& value) {
-	return PushFront(value);
-}
-
 // PopBack() Function
 // Pops the element at the back of the Vector and returns the value.
 template<typename T>
-T Vector<T>::PopBack() {
+T Vector<T>::pop_back() {
 	// Check if m_Size is zero as there would be nothing to pop.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: PopBack() called when size is equal to 0.");
@@ -392,16 +349,11 @@ T Vector<T>::PopBack() {
 	return std::move(m_Data[--m_Size]);		// Return the moved value of m_Data at the decremented m_Size.
 }
 
-template<typename T>
-T Vector<T>::pop_back() {
-	return PopBack();
-}
-
 // PopFront() Function
 // Pops the element at the front of the Vector and returns the value.
 // Note: This function has an O(n) time complexity, and PopBack() should always be preferred for its O(1) time complexity.
 template<typename T>
-T Vector<T>::PopFront() {
+T Vector<T>::pop_front() {
 	// Check if m_Size is zero as there would be nothing to pop.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: PopFront() called when size is equal to 0.");
@@ -415,15 +367,10 @@ T Vector<T>::PopFront() {
 	return value;
 }
 
-template<typename T>
-T Vector<T>::pop_front() {
-	return PopFront();
-}
-
 // RemoveAt(size_t) Function
 // Remove the element at a given index.
 template<typename T>
-void Vector<T>::RemoveAt(size_t idx) {
+void Vector<T>::remove_at(size_t idx) {
 	// Check if the index given is greater or equal to m_Size.
 	// It is not necessary to check if it is less than 0 as it is unsigned.
 	if (idx >= m_Size) {
@@ -436,31 +383,21 @@ void Vector<T>::RemoveAt(size_t idx) {
 	--m_Size;
 }
 
-template<typename T>
-void Vector<T>::remove_at(size_t idx) {
-	return RemoveAt(idx);
-}
-
 // Back() Function
 // Returns a reference to the element at the back of the Vector.
 template<typename T>
-T& Vector<T>::Back() {
+T& Vector<T>::back() {
 	// Check if m_Size is 0 as that would indicate that there is no back to the Vector.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: Back() called when size is equal to 0.");
 	}
 	return m_Data[m_Size - 1];
-}
-
-template<typename T>
-T& Vector<T>::back() {
-	return Back();
 }
 
 // const Back() Function
 // Return a const reference to the element at the back of the Vector.
 template<typename T>
-const T& Vector<T>::Back() const {
+const T& Vector<T>::back() const {
 	// Check if m_Size is 0 as that would indicate that there is no back to the Vector.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: Back() called when size is equal to 0.");
@@ -468,48 +405,33 @@ const T& Vector<T>::Back() const {
 	return m_Data[m_Size - 1];
 }
 
-template<typename T>
-const T& Vector<T>::back() const {
-	return Back();
-}
-
 // Front() Function
 // Returns a reference to the element at the front of the Vector.
 template<typename T>
-T& Vector<T>::Front() {
+T& Vector<T>::front() {
 	// Check if m_Size is 0 as that would indicate that there is no front of the Vector.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: Front() called when size is equal to 0.");
 	}
 	return m_Data[0];
-}
-
-template<typename T>
-T& Vector<T>::front() {
-	return Front();
 }
 
 // const Front() Function
 // Returns a const reference to the element at the front of the vector.
 template<typename T>
-const T& Vector<T>::Front() const {
+const T& Vector<T>::front() const {
 	// Check if m_Size is 0 as that would indicate that there is no front of the Vector.
 	if (m_Size == 0) {
 		throw std::runtime_error("Vector Error: Front() called when size is equal to 0.");
 	}
 	return m_Data[0];
-}
-
-template<typename T>
-const T& Vector<T>::front() const {
-	return Front();
 }
 
 // Find(const T&) Function
 // Finds the index of an element, returns m_Size if it is not found as m_Size is not a valid index.
 // Note that this requires T to have an == operator.
 template<typename T>
-size_t Vector<T>::Find(const T& required) const {
+size_t Vector<T>::find(const T& required) const {
 	for (size_t i = 0; i < m_Size; ++i) {
 		if (m_Data[i] == required) {
 			return static_cast<int>(i);
@@ -518,64 +440,39 @@ size_t Vector<T>::Find(const T& required) const {
 	return m_Size;
 }
 
-template<typename T>
-size_t Vector<T>::find(const T& required) const {
-	return Find(required);
-}
-
 // Clear() Function
 // Clears the Vector by setting the size to 0.
 template<typename T>
-void Vector<T>::Clear() {
-	m_Size = 0;
-}
-
-template<typename T>
 void Vector<T>::clear() {
-	Clear();
+	m_Size = 0;
 }
 
 // Empty() Function
 // Returns if the Vector is empty.
 template<typename T>
-bool Vector<T>::Empty() const {
-	return m_Size == 0;
-}
-
-template<typename T>
 bool Vector<T>::empty() const {
-	return Empty();
+	return m_Size == 0;
 }
 
 // Size() Function
 // Returns the size of the Vector.
 template<typename T>
-size_t Vector<T>::Size() const {
-	return m_Size;
-}
-
-template<typename T>
 size_t Vector<T>::size() const {
-	return Size();
+	return m_Size;
 }
 
 // Capacity() Function
 // Returns the capacity of the Vector.
 template<typename T>
-size_t Vector<T>::Capacity() const {
-	return m_Capacity;
-}
-
-template<typename T>
 size_t Vector<T>::capacity() const {
-	return Capacity();
+	return m_Capacity;
 }
 
 // Grow() Function
 // Double the capacity, copy the values of the array, and create a new array.
 // It does not have a snake_case alias because it is only referenced locally.
 template<typename T>
-void Vector<T>::Grow() {
+void Vector<T>::grow() {
 	size_t newCapacity = (m_Capacity == 0) ? 1 : m_Capacity * 2;		// Get the new capacity of the Vector, which is 1 if it is already 0.
 	T* copy = new T[newCapacity];		// Create a pointer of type T with the size of the new capacity.
 	// Iterate over the original array and deep copy each element to the copy array.
@@ -586,6 +483,172 @@ void Vector<T>::Grow() {
 	delete[] m_Data;
 	m_Data = copy;		// Set m_Data to the address of copy.
 	m_Capacity = newCapacity;
+}
+
+/**********************************************************************
+* Class Name: Array
+* Class Description:
+*	A simple array class. This allows the programmer to use fixed-size
+*	arrays without having to deal with the headache of sending the
+*	size alongside the array.
+**********************************************************************/
+template <typename T, size_t N>
+class Array {
+private:
+	T m_Data[N];
+
+public:
+	Array();
+
+	Array(const std::initializer_list<T>&);
+
+	Array(const Array&);
+
+	Array(Array&&) noexcept;
+
+	Array& operator=(const Array&);
+
+	Array& operator=(Array&&) noexcept;
+
+	T& operator[](size_t);
+
+	const T& operator[](size_t) const;
+
+	T& at(size_t);
+
+	const T& at(size_t) const;
+
+	T& back();
+
+	const T& back() const;
+
+	T& front();
+
+	const T& front() const;
+
+	size_t find(const T& required) const;
+
+	size_t size() const;
+};
+
+template<typename T, size_t N>
+Array<T, N>::Array() {
+	for (size_t i = 0; i < N; ++i) {
+		m_Data[i] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(const std::initializer_list<T>& list) {
+	size_t idx = 0;
+	for (const auto& val : list) {
+		if (idx >= N) {
+			break;
+		}
+		m_Data[idx++] = val;
+	}
+	for (size_t i = idx; i < N; ++i) {
+		m_Data[i] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(const Array& other) {
+	size_t idx = 0;
+	for (idx = 0; idx < other.size(); ++idx) {
+		m_Data[idx] = other[idx];
+	}
+	for (; idx < N; ++idx) {
+		m_Data[idx] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(Array&& other) noexcept {
+	for (size_t i = 0; i < N; ++i) {
+		m_Data[i] = other.m_Data[i];
+		other.m_Data[i] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>& Array<T, N>::operator=(const Array& other) {
+	size_t idx = 0;
+	for (idx = 0; idx < other.size(); ++idx) {
+		m_Data[idx] = other[idx];
+	}
+	for (; idx < N; ++idx) {
+		m_Data[idx] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>& Array<T, N>::operator=(Array&& other) noexcept {
+	for (size_t i = 0; i < N; ++i) {
+		m_Data[i] = other.m_Data[i];
+		other.m_Data[i] = {};
+	}
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::operator[](size_t idx) {
+	return m_Data[idx];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::operator[](size_t idx) const {
+	return m_Data[idx];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::at(size_t idx) {
+	if (idx >= N) {
+		throw std::out_of_range("Array Error: at() given index greater than number of elements.");
+	}
+	return m_Data[idx];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::at(size_t idx) const {
+	if (idx >= N) {
+		throw std::out_of_range("Array Error: at() given index greater than number of elements.");
+	}
+	return m_Data[idx];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::back() {
+	return m_Data[N - 1];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::back() const {
+	return m_Data[N - 1];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::front() {
+	return m_Data[0];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::front() const {
+	return m_Data[0];
+}
+
+template<typename T, size_t N>
+size_t Array<T, N>::find(const T& required) const {
+	for (size_t i = 0; i < N; ++i) {
+		if (m_Data[i] == required) {
+			return i;
+		}
+	}
+	return N;
+}
+
+template<typename T, size_t N>
+size_t Array<T, N>::size() const {
+	return N;
 }
 
 /**********************************************************************
