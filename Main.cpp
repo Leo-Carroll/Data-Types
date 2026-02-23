@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DATA_TYPES_H
+#define DATA_TYPES_H
 
 #include <initializer_list>		// Included for std::initializer_list, which is used for the construct.
 #include <stdexcept>			// Included to throw std::runtime_error when something goes wrong.
@@ -158,7 +159,7 @@ Vector<T>::Vector(const std::initializer_list<T>& values)
 	: Vector(values.size()) {		// Preallocate memory for the list.
 	// Iterate over the initializer list.
 	for (const T& v : values) {
-		PushBack(v);		// Insert each value.
+		push_back(v);		// Insert each value.
 	}
 }
 
@@ -495,39 +496,76 @@ void Vector<T>::grow() {
 template <typename T, size_t N>
 class Array {
 private:
-	T m_Data[N];
+	T m_Data[N];		// The stack-allocated array that holds the data.
 
 public:
+	// Default constructor: Default constructs each element in the array.
 	Array();
 
+	// Initializer List Constructor
+	// Allows for the programmer to initialize the array using an initializer list.
+	// This would look like: Array<int, 3> arr = { 0, 1, 2 }.
 	Array(const std::initializer_list<T>&);
 
+	// Copy Constructor
+	// Allows for one array to be copied to another through the constructor.
 	Array(const Array&);
 
+	// Move Constructor
+	// Allows for an array to be moved. This will only be called if the passed array is moved using std::move.
 	Array(Array&&) noexcept;
 
+	// Copy equal operator
+	// Allows for an array of size N to be copied to another array of the same size.
 	Array& operator=(const Array&);
 
+	// Move equal operator
+	// Allows for an array of size N to be moved to another array of the same size.
 	Array& operator=(Array&&) noexcept;
 
+	// Non-const square bracket operator
+	// Allows for the data of the array to be accessed using the index put inside the square brackets.
+	// It is not bounds-checked.
 	T& operator[](size_t);
 
+	// const square bracket operator
+	// Allows for a const array to be accessed using the index inside of the square brackets.
+	// It is not bounds-checked.
 	const T& operator[](size_t) const;
 
+	// at() Function
+	// Allows for a non-const array to be accessed.
+	// It is bounds-checked and will throw an exception of an index greater than size N is given.
 	T& at(size_t);
 
+	// const at() Function
+	// Allows for a const array to be accessed.
+	// It is bounds-checked and will throw an exception of an index greater than size N is given.
 	const T& at(size_t) const;
 
+	// back() Function
+	// Returns a reference to the element at the back of the array.
 	T& back();
 
+	// const back() Function
+	// Returns a const reference to the element at the back of the array.
 	const T& back() const;
 
+	// front() Function
+	// Returns a reference to the element at the front of the array.
 	T& front();
 
+	// const front() Function
+	// Returns a const reference to the element at the front of the array.
 	const T& front() const;
 
+	// find() Function
+	// Returns the index of the first element with a given value.
+	// Requires for type T to have an == operator.
 	size_t find(const T& required) const;
 
+	// size() Function
+	// Returns the size of the array.
 	size_t size() const;
 };
 
@@ -580,6 +618,7 @@ Array<T, N>& Array<T, N>::operator=(const Array& other) {
 	for (; idx < N; ++idx) {
 		m_Data[idx] = {};
 	}
+	return *this;
 }
 
 template<typename T, size_t N>
@@ -588,6 +627,7 @@ Array<T, N>& Array<T, N>::operator=(Array&& other) noexcept {
 		m_Data[i] = other.m_Data[i];
 		other.m_Data[i] = {};
 	}
+	return *this;
 }
 
 template<typename T, size_t N>
@@ -874,3 +914,5 @@ size_t Map<KeyT, ValT>::FindKey(const KeyT& key) const {
 	}
 	return m_Keys.Size();
 }
+
+#endif
