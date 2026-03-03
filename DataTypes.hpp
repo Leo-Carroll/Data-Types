@@ -1,3 +1,6 @@
+#ifndef DATATYPES_H
+#define DATATYPES_H
+
 #include <stdexcept>
 #include <cassert>
 #include <initializer_list>
@@ -537,7 +540,7 @@ public:
 	private:
 		using NodePtr = std::conditional_t<IsConst, const Node*, Node*>;
 		NodePtr m_Node;
-		
+
 	public:
 		using iterator_category = std::bidirectional_iterator_tag;
 		using value_t = T;
@@ -1083,7 +1086,7 @@ private:
 			return !(*this == other);
 		}
 	};
-	
+
 public:
 	using iterator = generic_iterator<false>;
 	using const_iterator = generic_iterator<true>;
@@ -1123,7 +1126,7 @@ public:
 	iterator begin() {
 		return iterator(this, 0);
 	}
-	
+
 	const_iterator begin() const {
 		return const_iterator(this, 0);
 	}
@@ -1367,3 +1370,5 @@ size_t HashMap<KeyT, ValT, Hash>::get_key_index(const KeyT& key) const {
 }
 
 #pragma endregion
+
+#endif
