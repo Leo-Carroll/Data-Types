@@ -1,34 +1,73 @@
+/***********************************************************
+*						DataTypes.h
+* Author: Leo Carroll
+* Overview:
+*	A header-only custom data type library. It comes with
+*	implementations of vectors, arrays, linked lists, and
+*	hashmaps.
+* Created: 2026-03-02
+* Last Modified: 2026-03-03
+* Notes:
+*	You cannot put templated functions in a .cpp file, which
+*	is why it is header-only.
+*
+*	This specific version was written from scratch on the
+*	second of March, 2026. I applied lots of previous
+*	knowledge and strategies that I learned from previously
+*	implementing a worse version of this program.
+************************************************************/
+
+#pragma region Headers And Helpers
+
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include <stdexcept>
-#include <cassert>
-#include <initializer_list>
-#include <utility>
+#include <stdexcept>			// Included for std::runtime_error and std::out_of_range.
+#include <cassert>				// Included to quickly get rid of annoying Intellisense warnings.
+#include <initializer_list>		// Included for the ability to initialize containers using brace-enclosed lists.
+#include <utility>				// Included for some helper functions.
+#include <type_traits>
+#include <tuple>
+#include <cstddef>
 
+// next_power_of_two Function
+// A function to get the next power of two of a number.
 static size_t next_power_of_two(size_t num) {
-	size_t result = 1;
+	size_t result = 1;		// Start the result at one.
+	// Double the number until it fits the required number.
 	while (result < num) {
 		result *= 2;
 	}
 	return result;
 }
 
+// swap Function
+// A function to swap the values of two variables.
 template<typename T>
-static void swap(T& a, T& b) noexcept {
-	T temp = std::move(a);
-	a = std::move(b);
-	b = std::move(temp);
+static void swap(T& a, T& b) {
+	T temp = std::move(a);		// Create a temporary variable to hold a's value.
+	a = std::move(b);			// Overwrite the value of a with the moved value of b
+	b = std::move(temp);		// Overwrite the value of b with the moved value of the temp.
 }
 
+#pragma endregion
+
+// Create a region. These regions allows for me to hide entire sections of code when I don't need to see them.
 #pragma region Vector
 
+#pragma region Class Definition
+/***********************************************************
+*						Vector Class
+* Description:
+*	A custom vector class that uses features like placement
+*	new and pointers as iterators.
+************************************************************/
 template<typename T>
 class Vector {
 private:
-	T* m_Data;
-	size_t m_Size;
-	size_t m_Capacity;
+	T* m_Data;				// A pointer to the dynamically allocated memory.
+	size_t m_Size;			// The current number of elements in the vector.
+	size_t m_Capacity;		// The total capcity of the vector.
 
 public:
 	Vector();
@@ -126,15 +165,25 @@ private:
 	void grow();
 
 	void reallocate(size_t newCapacity);
+
+	T* copy_data() const;
 };
 
+#pragma endregion
+
+#pragma region Function Definitions
+// Default constructor
+// Initializes variables to safe default values (nullptr, 0, 0).
 template<typename T>
 Vector<T>::Vector() {
+	// Initialize member variables to default values.
 	m_Data = nullptr;
 	m_Size = 0;
 	m_Capacity = 0;
 }
 
+// Capacity constructor
+// Initializes the vector with a certain capacity.
 template<typename T>
 Vector<T>::Vector(size_t capacity) {
 	m_Data = static_cast<T*>(::operator new(sizeof(T) * capacity));
@@ -142,6 +191,8 @@ Vector<T>::Vector(size_t capacity) {
 	m_Capacity = capacity;
 }
 
+// Initializer List constructor
+// Allows for the vector to be initialized with a brace-enclosed list.
 template<typename T>
 Vector<T>::Vector(const std::initializer_list<T>& list) {
 	m_Size = 0;
@@ -152,6 +203,8 @@ Vector<T>::Vector(const std::initializer_list<T>& list) {
 	}
 }
 
+// Copy constructor
+// Allows for a vector to be copied in the constructor to another.
 template<typename T>
 Vector<T>::Vector(const Vector& other) {
 	m_Capacity = other.m_Capacity;
@@ -164,6 +217,9 @@ Vector<T>::Vector(const Vector& other) {
 	}
 }
 
+// Move constructor
+// Allows for one vector to be moved to another using std::move().
+// It is marked noexcept as is standard for move constructors and equal operators.
 template<typename T>
 Vector<T>::Vector(Vector&& other) noexcept {
 	m_Data = std::exchange(other.m_Data, nullptr);
@@ -171,18 +227,26 @@ Vector<T>::Vector(Vector&& other) noexcept {
 	m_Size = std::exchange(other.m_Size, 0);
 }
 
+// Copy = operator
+// Allows for a vector to be copied to another using the = operator.
 template<typename T>
 Vector<T>& Vector<T>::operator=(const Vector& other) {
 	if (this == &other) return *this;
 
 	Vector temp(other);
-	swap(m_Data, temp.m_Data);
+	T* tempData = copy_data();
+	m_Data = temp.m_Data;
+	temp.m_Data = tempData;
+
 	swap(m_Size, temp.m_Size);
 	swap(m_Capacity, temp.m_Capacity);
 
 	return *this;
 }
 
+// Move = operator
+// Allows for a vector to be moved to another using the = operator.
+// It is marked noexcept as is standard for move constructors and equal operators.
 template<typename T>
 Vector<T>& Vector<T>::operator=(Vector&& other) noexcept {
 	if (this == &other) return *this;
@@ -199,6 +263,8 @@ Vector<T>& Vector<T>::operator=(Vector&& other) noexcept {
 	return *this;
 }
 
+// Destructor
+// Frees the memory taken by the vector.
 template<typename T>
 Vector<T>::~Vector() {
 	for (size_t i = 0; i < m_Size; ++i) {
@@ -207,62 +273,88 @@ Vector<T>::~Vector() {
 	::operator delete(m_Data);
 }
 
+// non-const [] operator
+// Non-bounds checked index operator. Accesses the data pointer at a certain index.
+// Note: It can easily go out of range and access out-of-bounds data.
 template<typename T>
 T& Vector<T>::operator[](size_t idx) {
 	return m_Data[idx];
 }
 
+// const [] operator
+// Non-bounds checked constant index operator. Accesses the data pointer at a certain index.
+// Note: It can easily go out of range and access out-of-bounds data, but cannot alter it.
 template<typename T>
 const T& Vector<T>::operator[](size_t idx) const {
 	return m_Data[idx];
 }
 
+// non-const at function
+// Bounds checked at function. Accesses the data pointer at a certain index.
 template<typename T>
 T& Vector<T>::at(size_t idx) {
+	// Ensure that the given index is less than the number of elements.
 	if (idx >= m_Size) {
 		throw std::out_of_range("Index out of range");
 	}
 	return m_Data[idx];
 }
 
+// const at function
+// Bounds checked at function. Accesses the data pointer at a certain index.
 template<typename T>
 const T& Vector<T>::at(size_t idx) const {
+	// Ensure that the given index is less than the number of elements.
 	if (idx >= m_Size) {
 		throw std::out_of_range("Index out of range");
 	}
 	return m_Data[idx];
 }
 
+// Copy push_back function
+// Pushes an element to the back of the vector. It is pretty much just an alias for emplace_back.
 template<typename T>
 void Vector<T>::push_back(const T& value) {
 	emplace_back(value);
 }
 
+// Move push_back function
+// Pushes a moved element to the back of the vector. It is pretty much just an alias for emplace_back.
 template<typename T>
 void Vector<T>::push_back(T&& value) {
 	emplace_back(std::move(value));
 }
 
+// emplace_back function
+// In-place constructs a new element with the given arguments
+// Allows for just the arguments to be passed instead of a created object.
 template<typename T>
 template<typename... Args>
 void Vector<T>::emplace_back(Args&&... args) {
 	if (m_Size >= m_Capacity) {
-		grow();
+		grow();		// Double the capacity of the vector and reallocate memory.
 	}
+	// Use placement new and std::forward to construct in place and move the constructed object into the vector.
 	new (&m_Data[m_Size]) T(std::forward<Args>(args)...);
 	++m_Size;
 }
 
+// Copy push_front function
+// Pushes an element to the front of the vector.
 template<typename T>
 void Vector<T>::push_front(const T& value) {
-	emplace_front(std::move(value));
+	emplace_front(value);
 }
 
+// Move push_front function
+// Push a moved value to the front of the vector.
 template<typename T>
 void Vector<T>::push_front(T&& value) {
 	emplace_front(std::move(value));
 }
 
+// emplace_front function
+// Takes the arguments to construct an in-place object and push it to the front.
 template<typename T>
 template<typename... Args>
 void Vector<T>::emplace_front(Args&&... args) {
@@ -277,20 +369,26 @@ void Vector<T>::emplace_front(Args&&... args) {
 	++m_Size;
 }
 
+// Copy insert function
+// Inserts a copied element at the given index.
 template<typename T>
 void Vector<T>::insert(size_t idx, const T& value) {
 	emplace(idx, value);
-
 }
 
+// Move insert function
+// Inserts a moved element at the given index.
 template<typename T>
 void Vector<T>::insert(size_t idx, T&& value) {
 	emplace(idx, std::move(value));
 }
 
+// emplace function
+// Emplaces a constructed in-place element at the given index.
 template<typename T>
 template<typename... Args>
 void Vector<T>::emplace(size_t idx, Args&&... args) {
+	// Ensure that the index is within range
 	if (idx > m_Size) {
 		throw std::out_of_range("Index out of range.");
 	}
@@ -299,15 +397,19 @@ void Vector<T>::emplace(size_t idx, Args&&... args) {
 		grow();
 	}
 
+	// Iterate down to the index, moving each element to the right by one.
 	for (size_t i = m_Size; i > idx; --i) {
 		new (&m_Data[i]) T(std::move(m_Data[i - 1]));
 		m_Data[i - 1].~T();
 	}
 
+	// Use placement new to move the in-place constructed object into the object.
 	new (&m_Data[idx]) T(std::forward<Args>(args)...);
 	++m_Size;
 }
 
+// pop_back function
+// Removes the element at the back of the function.
 template<typename T>
 void Vector<T>::pop_back() {
 	if (m_Size == 0) {
@@ -317,19 +419,25 @@ void Vector<T>::pop_back() {
 	m_Data[--m_Size].~T();
 }
 
+// pop_front function
+// Removes the element at the front of the function.
 template<typename T>
 void Vector<T>::pop_front() {
 	if (m_Size == 0) {
 		throw std::runtime_error("pop_front called on empty vector.");
 	}
 	m_Data[0].~T();
+	// Iterate over the data, shifting each element to the left by one.
 	for (size_t i = 0; i < m_Size - 1; ++i) {
+		// Shift the data one to the left.
 		new (&m_Data[i]) T(std::move(m_Data[i + 1]));
-		m_Data[i + 1].~T();
+		m_Data[i + 1].~T();		// Destruct the moved element to prevent memory leaks.
 	}
 	--m_Size;
 }
 
+// erase function
+// Erases the element at an index.
 template<typename T>
 void Vector<T>::erase(size_t idx) {
 	if (idx >= m_Size) {
@@ -341,6 +449,9 @@ void Vector<T>::erase(size_t idx) {
 	m_Data[--m_Size].~T();
 }
 
+// non-const back function
+// Returns a reference to the element at the back of the vector.
+// Throws an exception if the vector is empty.
 template<typename T>
 T& Vector<T>::back() {
 	if (m_Data == nullptr) {
@@ -349,6 +460,9 @@ T& Vector<T>::back() {
 	return m_Data[m_Size - 1];
 }
 
+// const back function
+// Returns a constant reference to the element at the back of the vector.
+// Throws an exception if the vector is empty.
 template<typename T>
 const T& Vector<T>::back() const {
 	if (m_Data == nullptr) {
@@ -357,6 +471,9 @@ const T& Vector<T>::back() const {
 	return m_Data[m_Size - 1];
 }
 
+// non-const front function
+// Returns a reference to the element at the front of the vector.
+// Throws an exception if the vector is empty.
 template<typename T>
 T& Vector<T>::front() {
 	if (m_Data == nullptr) {
@@ -365,6 +482,9 @@ T& Vector<T>::front() {
 	return m_Data[0];
 }
 
+// const front function
+// Returns a const reference to the element at the front of the vector.
+// Throws an exception if the vector is empty.
 template<typename T>
 const T& Vector<T>::front() const {
 	if (m_Data == nullptr) {
@@ -373,36 +493,56 @@ const T& Vector<T>::front() const {
 	return m_Data[0];
 }
 
+// non-const begin function
+// Returns a pointer to the element at the front of the vector.
+// This enables range-based for loops.
 template<typename T>
 T* Vector<T>::begin() noexcept {
 	return m_Data;
 }
 
+// const begin function
+// Returns a constant pointer to the element at the front of the vector.
+// This enables range-based for loops.
 template<typename T>
 const T* Vector<T>::begin() const noexcept {
 	return m_Data;
 }
 
+// const cbegin function
+// Returns a constant pointer to the element at the front of the vector.
+// This enables range-based for loops.
 template<typename T>
 const T* Vector<T>::cbegin() const noexcept {
 	return m_Data;
 }
 
+// non-const end function
+// Returns a pointer to the element at the end of the vector.
+// This acts as the upper range of a range-based for loop.
 template<typename T>
 T* Vector<T>::end() noexcept {
 	return m_Data + m_Size;
 }
 
+// const end function
+// Returns a constant pointer to the element at the end of the vector.
+// This acts as the upper range of a range-based for loop.
 template<typename T>
 const T* Vector<T>::end() const noexcept {
 	return m_Data + m_Size;
 }
 
+// const cend function
+// Returns a constant pointer to the element at the end of the vector.
+// This acts as the upper range of a range-based for loop.
 template<typename T>
 const T* Vector<T>::cend() const noexcept {
 	return m_Data + m_Size;
 }
 
+// clear function
+// Removes every element in the vector.
 template<typename T>
 void Vector<T>::clear() {
 	for (size_t i = 0; i < m_Size; ++i) {
@@ -411,21 +551,29 @@ void Vector<T>::clear() {
 	m_Size = 0;
 }
 
+// empty function
+// Returns true if the vector is empty.
 template<typename T>
 bool Vector<T>::empty() const {
 	return m_Size == 0;
 }
 
+// size function
+// Returns the current number of elements in the vector.
 template<typename T>
 size_t Vector<T>::size() const {
 	return m_Size;
 }
 
+// capacity function
+// Returns the total capacity of the vector.
 template<typename T>
 size_t Vector<T>::capacity() const {
 	return m_Capacity;
 }
 
+// resize function
+// Increases the vector's capacity to the next power of two of the next newSize.
 template<typename T>
 void Vector<T>::resize(size_t newSize) {
 	if (newSize > m_Capacity) {
@@ -447,22 +595,37 @@ void Vector<T>::resize(size_t newSize) {
 	m_Size = newSize;
 }
 
+// non-const data function
+// Returns the data pointer.
 template<typename T>
 T* Vector<T>::data() noexcept {
 	return m_Data;
 }
 
+// const data function
+// Returns a const pointer to the data pointer.
 template<typename T>
 const T* Vector<T>::data() const noexcept {
 	return m_Data;
 }
 
+// shrink_to_fit function
+// Shrinks the vector to fit the number of elements in the vector.
 template<typename T>
 void Vector<T>::shrink_to_fit() {
 	size_t newCapacity = next_power_of_two(m_Size);
-	reallocate(newCapacity);
+	T* copy = static_cast<T*>(::operator new(sizeof(T) * newCapacity));
+	for (size_t i = 0; i < m_Size; ++i) {
+		new (&copy[i]) T(std::move(m_Data[i]));
+		m_Data[i].~T();
+	}
+	::operator delete(m_Data);
+	m_Data = copy;
+	m_Capacity = newCapacity;
 }
 
+// == operator
+// Checks if one vector is equal to another.
 template<typename T>
 bool Vector<T>::operator==(const Vector& other) const {
 	if (m_Size != other.m_Size) {
@@ -476,30 +639,48 @@ bool Vector<T>::operator==(const Vector& other) const {
 	return true;
 }
 
+// != operator
+// Checks if one vector is not equal to another.
 template<typename T>
 bool Vector<T>::operator!=(const Vector& other) const {
-	return ~(*this == other);
+	return !(*this == other);
 }
 
+// grow function
+// Double the capacity and reallocate the memory.
 template<typename T>
 void Vector<T>::grow() {
 	size_t newCapacity = (m_Capacity == 0) ? 1 : m_Capacity * 2;
 	reallocate(newCapacity);
 }
 
+// reallocate function
+// Reallocates the memory to fit the new capacity.
 template<typename T>
 void Vector<T>::reallocate(size_t newCapacity) {
-	T* copy = static_cast<T*>(::operator new(sizeof(T) * newCapacity));
+	if (newCapacity > m_Capacity) {
+		T* copy = static_cast<T*>(::operator new(sizeof(T) * newCapacity));
+		for (size_t i = 0; i < m_Size; ++i) {
+			new (&copy[i]) T(std::move(m_Data[i]));
+			m_Data[i].~T();
+		}
+		::operator delete(m_Data);
+		m_Data = copy;
+		m_Capacity = newCapacity;
+	}
+}
 
+template<typename T>
+T* Vector<T>::copy_data() const {
+	T* copy = static_cast<T*>(::operator new(sizeof(T) * m_Capacity));
 	for (size_t i = 0; i < m_Size; ++i) {
 		assert(i < m_Capacity);
-		new (&copy[i]) T(std::move(m_Data[i]));
-		m_Data[i].~T();
+		new (&copy[i]) T(m_Data[i]);
 	}
-	::operator delete(m_Data);
-	m_Data = copy;
-	m_Capacity = newCapacity;
+	return copy;
 }
+
+#pragma endregion
 
 #pragma endregion
 
@@ -1011,6 +1192,228 @@ bool LinkedList<T>::contains(const T& value) const {
 
 #pragma endregion
 
+#pragma region Array
+
+#pragma region Class Definition
+
+template<typename T, size_t N>
+class Array {
+private:
+	T m_Array[N];
+
+public:
+	Array();
+
+	Array(const T& defaultValue);
+
+	Array(const std::initializer_list<T>& list);
+
+	Array(const Array& other);
+
+	Array(Array&& other) noexcept;
+
+	Array& operator=(const Array& other);
+
+	Array& operator=(Array&& other) noexcept;
+
+	~Array();
+
+	T& operator[](size_t index);
+
+	const T& operator[](size_t index) const;
+
+	T& at(size_t index);
+
+	const T& at(size_t index) const;
+
+	T& back();
+
+	const T& back() const;
+
+	T& front();
+
+	const T& front() const;
+
+	size_t size() const;
+
+	T* data();
+
+	const T* data() const;
+
+	T* begin() noexcept;
+
+	const T* begin() const noexcept;
+
+	const T* cbegin() const noexcept;
+
+	T* end() noexcept;
+
+	const T* end() const noexcept;
+
+	const T* cend() const noexcept;
+};
+
+template<typename T, size_t N>
+Array<T, N>::Array() {
+	for (size_t i = 0; i < N; ++i) {
+		m_Array[i] = {};
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(const T& defaultValue) {
+	for (size_t i = 0; i < N; ++i) {
+		m_Array[i] = defaultValue;
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(const std::initializer_list<T>& list) 
+	: m_Array({}) {
+	if (list.size() > N) {
+		throw std::out_of_range("Initializer list too large");
+	}
+	size_t idx = 0;
+	for (const auto& value : list) {
+		m_Array[idx++] = value;
+	}
+	for (; idx < N; ++idx) {
+		m_Array[idx] = T();
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(const Array& other) {
+	for (size_t i = 0; i < N; ++i) {
+		m_Array[i] = other.m_Array[i];
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>::Array(Array&& other) noexcept {
+	for (size_t i = 0; i < N; ++i) {
+		m_Array[i] = std::move(other.m_Array[i]);
+	}
+}
+
+template<typename T, size_t N>
+Array<T, N>& Array<T, N>::operator=(const Array& other) {
+	if (this != &other) {
+		for (size_t i = 0; i < N; ++i) {
+			m_Array[i] = other.m_Array[i];
+		}
+	}
+	return *this;
+}
+
+template<typename T, size_t N>
+Array<T, N>& Array<T, N>::operator=(Array&& other) noexcept {
+	if (this != &other) {
+		for (size_t i = 0; i < N; ++i) {
+			m_Array[i] = std::move(other.m_Array[i]);
+		}
+	}
+	return *this;
+}
+
+template<typename T, size_t N>
+Array<T, N>::~Array() = default;
+
+template<typename T, size_t N>
+T& Array<T, N>::operator[](size_t index) {
+	return m_Array[index];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::operator[](size_t index) const {
+	return m_Array[index];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::at(size_t index) {
+	if (index >= N) {
+		throw std::out_of_range("Index out of bounds");
+	}
+	return m_Array[index];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::at(size_t index) const {
+	if (index >= N) {
+		throw std::out_of_range("Index out of bounds");
+	}
+	return m_Array[index];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::back() {
+	return m_Array[N - 1];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::back() const {
+	return m_Array[N - 1];
+}
+
+template<typename T, size_t N>
+T& Array<T, N>::front() {
+	return m_Array[0];
+}
+
+template<typename T, size_t N>
+const T& Array<T, N>::front() const {
+	return m_Array[0];
+}
+
+template<typename T, size_t N>
+size_t Array<T, N>::size() const {
+	return N;
+}
+
+template<typename T, size_t N>
+T* Array<T, N>::data() {
+	return m_Array;
+}
+
+template<typename T, size_t N>
+const T* Array<T, N>::data() const {
+	return m_Array;
+}
+
+template<typename T, size_t N>
+T* Array<T, N>::begin() noexcept {
+	return m_Array;
+}
+
+template<typename T, size_t N>
+const T* Array<T, N>::begin() const noexcept {
+	return m_Array;
+}
+
+template<typename T, size_t N>
+const T* Array<T, N>::cbegin() const noexcept {
+	return m_Array;
+}
+
+template<typename T, size_t N>
+T* Array<T, N>::end() noexcept {
+	return m_Array + N;
+}
+
+template<typename T, size_t N>
+const T* Array<T, N>::end() const noexcept {
+	return m_Array + N;
+}
+
+template<typename T, size_t N>
+const T* Array<T, N>::cend() const noexcept {
+	return m_Array + N;
+}
+
+#pragma endregion
+
+#pragma endregion
+
 #pragma region HashMap
 
 constexpr size_t DEFAULT_NUM_BUCKETS = 8;
@@ -1196,7 +1599,9 @@ template<typename KeyT, typename ValT, class Hash>
 HashMap<KeyT, ValT, Hash>& HashMap<KeyT, ValT, Hash>::operator=(const HashMap& other) {
 	if (this != &other) {
 		HashMap temp(other);
-		swap(m_Buckets, temp.m_Buckets);
+		Vector<LinkedList<std::pair<KeyT, ValT>>> tempBuckets = m_Buckets;
+		m_Buckets = temp.m_Buckets;
+		temp.m_Buckets = tempBuckets;
 		swap(m_NumBuckets, temp.m_NumBuckets);
 		swap(m_Size, temp.m_Size);
 	}
@@ -1222,7 +1627,7 @@ ValT& HashMap<KeyT, ValT, Hash>::operator[](const KeyT& key) {
 		return insert(key, {}).second;
 	}
 
-	return m_Buckets[bucketIndex].at(keyIndex);
+	return m_Buckets[bucketIndex].at(keyIndex).second;
 }
 
 template<typename KeyT, typename ValT, class Hash>
